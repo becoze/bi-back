@@ -16,6 +16,11 @@ import java.io.Serializable;
 public class ChartAddRequest implements Serializable {
 
     /**
+     * Name
+     */
+    private String name;
+
+    /**
      * Purpose
      */
     private String goal;

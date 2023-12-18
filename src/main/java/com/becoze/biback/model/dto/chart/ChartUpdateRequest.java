@@ -14,6 +14,12 @@ import java.io.Serializable;
  */
 @Data
 public class ChartUpdateRequest implements Serializable {
+
+    /**
+     * Name
+     */
+    private String name;
+
     /**
      * id
      */

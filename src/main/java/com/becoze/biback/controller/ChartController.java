@@ -7,14 +7,14 @@ import com.becoze.biback.common.BaseResponse;
 import com.becoze.biback.common.DeleteRequest;
 import com.becoze.biback.common.ErrorCode;
 import com.becoze.biback.common.ResultUtils;
+import com.becoze.biback.constant.FileConstant;
 import com.becoze.biback.constant.UserConstant;
 import com.becoze.biback.exception.ThrowUtils;
-import com.becoze.biback.model.dto.chart.ChartAddRequest;
-import com.becoze.biback.model.dto.chart.ChartEditRequest;
-import com.becoze.biback.model.dto.chart.ChartQueryRequest;
-import com.becoze.biback.model.dto.chart.ChartUpdateRequest;
+import com.becoze.biback.model.dto.chart.*;
+import com.becoze.biback.model.dto.file.UploadFileRequest;
 import com.becoze.biback.model.entity.Chart;
 import com.becoze.biback.model.entity.User;
+import com.becoze.biback.model.enums.FileUploadBizEnum;
 import com.becoze.biback.service.ChartService;
 import com.becoze.biback.service.UserService;
 import com.becoze.biback.utils.SqlUtils;
@@ -23,12 +23,15 @@ import com.becoze.biback.constant.CommonConstant;
 import com.becoze.biback.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
 
 /**
  * 帖子接口
@@ -52,7 +55,7 @@ public class ChartController {
     // region 增删改查
 
     /**
-     * 创建
+     * Creat
      *
      * @param chartAddRequest
      * @param request
@@ -74,7 +77,7 @@ public class ChartController {
     }
 
     /**
-     * 删除
+     * Delete
      *
      * @param deleteRequest
      * @param request
@@ -139,6 +142,48 @@ public class ChartController {
     }
 
     /**
+     * AI Analysis upload
+     *
+     * @param multipartFile
+     * @param genChartByAiRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/genChart")
+    public BaseResponse<String> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
+                                             GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+        // gather user input
+        String name = genChartByAiRequest.getName();
+        String goal = genChartByAiRequest.getGoal();
+        String chartType = genChartByAiRequest.getChartType();
+
+        // authentication
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "goal is Null");
+        ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "Long name");
+
+        // Excel
+
+
+        User loginUser = userService.getLoginUser(request);
+        // 文件目录：根据业务、用户来划分
+        String uuid = RandomStringUtils.randomAlphanumeric(8);
+        String filename = uuid + "-" + multipartFile.getOriginalFilename();
+        File file = null;
+        try {
+            return ResultUtils.success("");
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
+        } finally {
+            if (file != null) {
+                // 删除临时文件
+                boolean delete = file.delete();
+                if (!delete) {
+                }
+            }
+        }
+    }
+
+    /**
      * 分页获取列表（封装类）
      *
      * @param chartQueryRequest
@@ -184,7 +229,7 @@ public class ChartController {
     // endregion
 
     /**
-     * 编辑（用户）
+     * User Edit
      *
      * @param chartEditRequest
      * @param request
@@ -224,6 +269,7 @@ public class ChartController {
         // 查询参数
         Long id = chartQueryRequest.getId();
         String goal = chartQueryRequest.getGoal();
+        String name = chartQueryRequest.getName();
         String chartType = chartQueryRequest.getChartType();
         Long userId = chartQueryRequest.getUserId();
         String sortField = chartQueryRequest.getSortField();
@@ -232,6 +278,7 @@ public class ChartController {
         // 拼接查询条件
         queryWrapper.eq(id != null && id > 0, "id", id);
         queryWrapper.eq(StringUtils.isNotBlank(goal), "goal", goal);
+        queryWrapper.like(StringUtils.isNotBlank(name), "name", name);
         queryWrapper.eq(StringUtils.isNotBlank(chartType), "chartType", chartType);
         queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
         queryWrapper.eq("isDelete", false);
