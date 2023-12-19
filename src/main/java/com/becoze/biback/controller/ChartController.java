@@ -17,6 +17,7 @@ import com.becoze.biback.model.entity.User;
 import com.becoze.biback.model.enums.FileUploadBizEnum;
 import com.becoze.biback.service.ChartService;
 import com.becoze.biback.service.UserService;
+import com.becoze.biback.utils.ExcelUtils;
 import com.becoze.biback.utils.SqlUtils;
 import com.google.gson.Gson;
 import com.becoze.biback.constant.CommonConstant;
@@ -149,7 +150,7 @@ public class ChartController {
      * @param request
      * @return
      */
-    @PostMapping("/genChart")
+    @PostMapping("/gen")
     public BaseResponse<String> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
                                              GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         // gather user input
@@ -162,25 +163,26 @@ public class ChartController {
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "Long name");
 
         // Excel
+        String res = ExcelUtils.excelToCsv(multipartFile);
+        return ResultUtils.success(res);
 
-
-        User loginUser = userService.getLoginUser(request);
-        // 文件目录：根据业务、用户来划分
-        String uuid = RandomStringUtils.randomAlphanumeric(8);
-        String filename = uuid + "-" + multipartFile.getOriginalFilename();
-        File file = null;
-        try {
-            return ResultUtils.success("");
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
-        } finally {
-            if (file != null) {
-                // 删除临时文件
-                boolean delete = file.delete();
-                if (!delete) {
-                }
-            }
-        }
+//        User loginUser = userService.getLoginUser(request);
+//        // 文件目录：根据业务、用户来划分
+//        String uuid = RandomStringUtils.randomAlphanumeric(8);
+//        String filename = uuid + "-" + multipartFile.getOriginalFilename();
+//        File file = null;
+//        try {
+//            return ResultUtils.success("");
+//        } catch (Exception e) {
+//            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
+//        } finally {
+//            if (file != null) {
+//                // 删除临时文件
+//                boolean delete = file.delete();
+//                if (!delete) {
+//                }
+//            }
+//        }
     }
 
     /**
