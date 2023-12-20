@@ -162,7 +162,13 @@ public class ChartController {
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "goal is Null");
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "Long name");
 
-        // Excel
+        // User Input - goal, chart type, chart name
+        StringBuilder userInput = new StringBuilder();
+//        userInput.append("You are a xxx").append("\n"); // AI preset
+        userInput.append("You need to use ").append(chartType).append("to analysis following ");
+        userInput.append("Goal: ").append(goal).append("\n");
+
+        // Excel content
         String res = ExcelUtils.excelToCsv(multipartFile);
         return ResultUtils.success(res);
 
