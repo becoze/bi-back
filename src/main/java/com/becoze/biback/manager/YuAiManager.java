@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 
 @Service
-public class yuAiManager {
+public class YuAiManager {
     @Resource
     private YuCongMingClient yuCongMingClient;
 
@@ -23,7 +23,7 @@ public class yuAiManager {
      */
     public String doChat(long modelId, String message){
         DevChatRequest devChatRequest = new DevChatRequest();
-        devChatRequest.setModelId(modelId);   // 鱼聪明模型ID 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
+        devChatRequest.setModelId(modelId);
         devChatRequest.setMessage(message);
 
         BaseResponse<DevChatResponse> response = yuCongMingClient.doChat(devChatRequest);

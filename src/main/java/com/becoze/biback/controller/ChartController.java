@@ -7,14 +7,13 @@ import com.becoze.biback.common.BaseResponse;
 import com.becoze.biback.common.DeleteRequest;
 import com.becoze.biback.common.ErrorCode;
 import com.becoze.biback.common.ResultUtils;
-import com.becoze.biback.constant.FileConstant;
 import com.becoze.biback.constant.UserConstant;
 import com.becoze.biback.exception.ThrowUtils;
+import com.becoze.biback.manager.YuAiManager;
 import com.becoze.biback.model.dto.chart.*;
-import com.becoze.biback.model.dto.file.UploadFileRequest;
 import com.becoze.biback.model.entity.Chart;
 import com.becoze.biback.model.entity.User;
-import com.becoze.biback.model.enums.FileUploadBizEnum;
+import com.becoze.biback.model.vo.YuAiResponse;
 import com.becoze.biback.service.ChartService;
 import com.becoze.biback.service.UserService;
 import com.becoze.biback.utils.ExcelUtils;
@@ -24,7 +23,6 @@ import com.becoze.biback.constant.CommonConstant;
 import com.becoze.biback.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +30,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
 
 /**
  * 帖子接口
@@ -50,6 +47,9 @@ public class ChartController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private YuAiManager yuAiManager;
 
     private final static Gson GSON = new Gson();
 
@@ -151,7 +151,7 @@ public class ChartController {
      * @return
      */
     @PostMapping("/gen")
-    public BaseResponse<String> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
+    public BaseResponse<YuAiResponse> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
                                              GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         // gather user input
         String name = genChartByAiRequest.getName();
@@ -161,34 +161,58 @@ public class ChartController {
         // authentication
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "goal is Null");
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "Long name");
+        User loginUser = userService.getLoginUser(request); // gather information for logged-in user
+
+        // AI
+        // 鱼聪明模型ID 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
+        long biModelId = 1709156902984093697L;
 
         // User Input - goal, chart type, chart name
         StringBuilder userInput = new StringBuilder();
-//        userInput.append("You are a xxx").append("\n"); // AI preset
-        userInput.append("You need to use ").append(chartType).append("to analysis following ");
-        userInput.append("Goal: ").append(goal).append("\n");
+        userInput.append("Analysis goal: ").append(goal).append(". \n");
+        // Use user chart type preference, or let AI decide
+        if(StringUtils.isNotBlank(chartType)){
+            userInput.append("Generate a ").append(chartType).append(" accordingly. \n");
+        }else{
+            userInput.append("Generate a most suitable chart").append(". \n");
+        }
+        userInput.append("Raw data: ").append("\n");
+        String rawData = ExcelUtils.excelToCsv(multipartFile); // Excel content (raw data)
+        userInput.append(rawData).append("\n");
 
-        // Excel content
-        String res = ExcelUtils.excelToCsv(multipartFile);
-        return ResultUtils.success(res);
+        // Use AI gather response
+        String aiResponse = yuAiManager.doChat(biModelId, userInput.toString());
 
-//        User loginUser = userService.getLoginUser(request);
-//        // 文件目录：根据业务、用户来划分
-//        String uuid = RandomStringUtils.randomAlphanumeric(8);
-//        String filename = uuid + "-" + multipartFile.getOriginalFilename();
-//        File file = null;
-//        try {
-//            return ResultUtils.success("");
-//        } catch (Exception e) {
-//            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
-//        } finally {
-//            if (file != null) {
-//                // 删除临时文件
-//                boolean delete = file.delete();
-//                if (!delete) {
-//                }
-//            }
-//        }
+        // AI Response check
+        String[] splits = aiResponse.split("【【【【【");
+        if(splits.length < 3){      // AI generate wrong format
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AI Response Error");
+        }
+
+        // Splits and Keep response accordingly
+        String genChart = splits[1].trim();
+        String genResult = splits[2].trim();
+
+        // Save data into database
+        Chart chart = new Chart();
+        chart.setName(name);
+        chart.setGoal(goal);
+        chart.setChartData(rawData);
+        chart.setChartType(chartType);
+        chart.setGenChart(genChart);
+        chart.setGenResult(genResult);
+        chart.setUserId(loginUser.getId());
+
+        // Save chart
+        boolean saveResult = chartService.save(chart);
+        ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "Chart saving Error");
+
+        YuAiResponse yuAiResponse = new YuAiResponse();
+        yuAiResponse.setGenChart(genChart);
+        yuAiResponse.setGenResult(genResult);
+        yuAiResponse.setChartId(chart.getId());
+
+        return ResultUtils.success(yuAiResponse);
     }
 
     /**
