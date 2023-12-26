@@ -17,12 +17,13 @@ public class yuAiManager {
 
     /**
      * AI response
+     * @param modelId
      * @param message
      * @return
      */
-    public String doChat(String message){
+    public String doChat(long modelId, String message){
         DevChatRequest devChatRequest = new DevChatRequest();
-        devChatRequest.setModelId(000000000000000L);   // 鱼聪明模型ID
+        devChatRequest.setModelId(modelId);   // 鱼聪明模型ID 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
         devChatRequest.setMessage(message);
 
         BaseResponse<DevChatResponse> response = yuCongMingClient.doChat(devChatRequest);
