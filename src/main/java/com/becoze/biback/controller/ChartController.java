@@ -146,17 +146,17 @@ public class ChartController {
      * AI Analysis upload
      *
      * @param multipartFile
-     * @param genChartByAiRequest
+     * @param genChartByYuAiRequest
      * @param request
      * @return
      */
     @PostMapping("/gen")
-    public BaseResponse<YuAiResponse> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
-                                             GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+    public BaseResponse<YuAiResponse> genChartByYuAi(@RequestPart("file") MultipartFile multipartFile,
+                                                     GenChartByYuAiRequest genChartByYuAiRequest, HttpServletRequest request) {
         // gather user input
-        String name = genChartByAiRequest.getName();
-        String goal = genChartByAiRequest.getGoal();
-        String chartType = genChartByAiRequest.getChartType();
+        String name = genChartByYuAiRequest.getName();
+        String goal = genChartByYuAiRequest.getGoal();
+        String chartType = genChartByYuAiRequest.getChartType();
 
         // authentication
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "goal is Null");
