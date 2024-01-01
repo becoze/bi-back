@@ -182,6 +182,7 @@ public class ChartController {
 
         // Use AI gather response
         String aiResponse = yuAiManager.doChat(biModelId, userInput.toString());
+//        String aiResponse = "1abc";
 
         // AI Response check
         String[] splits = aiResponse.split("【【【【【");
