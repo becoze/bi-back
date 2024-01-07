@@ -1,5 +1,6 @@
 package com.becoze.biback.controller;
 
+import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.becoze.biback.annotation.AuthCheck;
@@ -30,6 +31,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 帖子接口
@@ -153,25 +156,48 @@ public class ChartController {
     @PostMapping("/gen")
     public BaseResponse<YuAiResponse> genChartByYuAi(@RequestPart("file") MultipartFile multipartFile,
                                                      GenChartByYuAiRequest genChartByYuAiRequest, HttpServletRequest request) {
-        // gather user input
+        /*
+         * gather user input
+         */
         String name = genChartByYuAiRequest.getName();
         String goal = genChartByYuAiRequest.getGoal();
         String chartType = genChartByYuAiRequest.getChartType();
 
-        // authentication
+        /*
+         * user input authentication, check input (goal, name) is valid
+         */
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "goal is Null");
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "Long name");
-        User loginUser = userService.getLoginUser(request); // gather information for logged-in user
 
-        // AI
+        /*
+         * file authentication
+         */
+        // Check file size
+        long size = multipartFile.getSize();
+        final long ONE_MB = 1024 * 1024 * 1L;   // define the size of 1 MB threshold
+        ThrowUtils.throwIf( size > ONE_MB, ErrorCode.PARAMS_ERROR, "Exceed file size limit 1M");
+
+        // Check file suffix
+        String originalFilename = multipartFile.getOriginalFilename();
+        String suffix = FileUtil.getSuffix(originalFilename);       // HuTool FileUtil.getSuffix() method
+        final List<String> validFileSuffix = Arrays.asList("png", "jpg", "svg", "webp", "jpeg");
+        ThrowUtils.throwIf(!validFileSuffix.contains(suffix), ErrorCode.PARAMS_ERROR, "Invalid file suffix");
+
+
+
+        /*
+         * AI model ID
+         */
         // 鱼聪明模型ID 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
         long biModelId = 1709156902984093697L;
 
-        // User Input - goal, chart type, chart name
+        /*
+         * Gather and form User Input - goal, chart type, chart name
+         */
         StringBuilder userInput = new StringBuilder();
         userInput.append("Analysis goal: ").append(goal).append(". \n");
-        // Use user chart type preference, or let AI decide
-        if(StringUtils.isNotBlank(chartType)){
+
+        if(StringUtils.isNotBlank(chartType)){      // Use user chart type preference if provided, or let AI decide
             userInput.append("Generate a ").append(chartType).append(" accordingly. \n");
         }else{
             userInput.append("Generate a most suitable chart").append(". \n");
@@ -180,21 +206,26 @@ public class ChartController {
         String rawData = ExcelUtils.excelToCsv(multipartFile); // Excel content (raw data)
         userInput.append(rawData).append("\n");
 
-        // Use AI gather response
+        /*
+         * Using AI to gather response
+         */
         String aiResponse = yuAiManager.doChat(biModelId, userInput.toString());
-//        String aiResponse = "1abc";
 
-        // AI Response check
+        /*
+         * Check AI Response is valid, splits AIGC content for data saving
+         */
         String[] splits = aiResponse.split("【【【【【");
         if(splits.length < 3){      // AI generate wrong format
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AI Response Error");
         }
 
-        // Splits and Keep response accordingly
         String genChart = splits[1].trim();
         String genResult = splits[2].trim();
 
-        // Save data into database
+        /*
+         * Save data into database
+         */
+        User loginUser = userService.getLoginUser(request); // get login user
         Chart chart = new Chart();
         chart.setName(name);
         chart.setGoal(goal);
@@ -203,15 +234,17 @@ public class ChartController {
         chart.setGenChart(genChart);
         chart.setGenResult(genResult);
         chart.setUserId(loginUser.getId());
-
-        // Save chart
         boolean saveResult = chartService.save(chart);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "Chart saving Error");
 
+        /*
+         * form response for front end
+         */
         YuAiResponse yuAiResponse = new YuAiResponse();
         yuAiResponse.setGenChart(genChart);
         yuAiResponse.setGenResult(genResult);
         yuAiResponse.setChartId(chart.getId());
+
 
         return ResultUtils.success(yuAiResponse);
     }
