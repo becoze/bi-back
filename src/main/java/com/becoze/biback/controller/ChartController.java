@@ -10,6 +10,7 @@ import com.becoze.biback.common.ErrorCode;
 import com.becoze.biback.common.ResultUtils;
 import com.becoze.biback.constant.UserConstant;
 import com.becoze.biback.exception.ThrowUtils;
+import com.becoze.biback.manager.RedisLimiterManager;
 import com.becoze.biback.manager.YuAiManager;
 import com.becoze.biback.model.dto.chart.*;
 import com.becoze.biback.model.entity.Chart;
@@ -53,6 +54,9 @@ public class ChartController {
 
     @Resource
     private YuAiManager yuAiManager;
+
+    @Resource
+    private RedisLimiterManager redisLimiterManager;
 
     private final static Gson GSON = new Gson();
 
@@ -183,7 +187,11 @@ public class ChartController {
         final List<String> validFileSuffix = Arrays.asList("png", "jpg", "svg", "webp", "jpeg");
         ThrowUtils.throwIf(!validFileSuffix.contains(suffix), ErrorCode.PARAMS_ERROR, "Invalid file suffix");
 
+        // Get login user
+        User loginUser = userService.getLoginUser(request);
 
+        // Rate Limiter, limit every user use current genChartByYuAi_ method
+        redisLimiterManager.doRateLimit("genChartByYuAi_" + loginUser.getId());
 
         /*
          * AI model ID
@@ -225,7 +233,6 @@ public class ChartController {
         /*
          * Save data into database
          */
-        User loginUser = userService.getLoginUser(request); // get login user
         Chart chart = new Chart();
         chart.setName(name);
         chart.setGoal(goal);
