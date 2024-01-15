@@ -184,7 +184,7 @@ public class ChartController {
         // Check file suffix
         String originalFilename = multipartFile.getOriginalFilename();
         String suffix = FileUtil.getSuffix(originalFilename);       // HuTool FileUtil.getSuffix() method
-        final List<String> validFileSuffix = Arrays.asList("png", "jpg", "svg", "webp", "jpeg");
+        final List<String> validFileSuffix = Arrays.asList("xlsx", "xls");
         ThrowUtils.throwIf(!validFileSuffix.contains(suffix), ErrorCode.PARAMS_ERROR, "Invalid file suffix");
 
         // Get login user
