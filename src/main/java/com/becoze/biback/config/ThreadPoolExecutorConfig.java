@@ -18,8 +18,9 @@ public class ThreadPoolExecutorConfig {
             private int count = 1;
             @Override
             public Thread newThread(@NotNull Runnable r) {
-                Thread thread = new Thread();
+                Thread thread = new Thread(r);
                 thread.setName("Thread " + count);
+                count++;
                 return thread;
             }
         };
