@@ -34,7 +34,7 @@ public class QueueController {
             System.out.println("Progressing task: " + task + " by " + Thread.currentThread().getName());
 
             try {
-                // the task will remain 60 min
+                // the task will remain 60 min (for test)
                 Thread.sleep(600000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -47,12 +47,12 @@ public class QueueController {
         Map<String, Object> map = new HashMap<>();
 
         int size = threadPoolExecutor.getQueue().size();
-        map.put("Size of the Queue", size);
+        map.put("# of Tasks in the queue", size);
 
         long taskCount = threadPoolExecutor.getTaskCount();
         map.put("# of Tasks", taskCount);
 
-        long completeTaskCount =threadPoolExecutor.getCompletedTaskCount();
+        long completeTaskCount = threadPoolExecutor.getCompletedTaskCount();
         map.put("# of Completed tasks", completeTaskCount);
 
         int activeCount = threadPoolExecutor.getActiveCount();
