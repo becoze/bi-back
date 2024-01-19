@@ -50,6 +50,16 @@ public class Chart implements Serializable {
     private String genResult;
 
     /**
+     * Chart status. wait, running, succeed, failed
+     */
+    private String status;
+
+    /**
+     * Execution message
+     */
+    private String execMessage;
+
+    /**
      * Creator user id
      */
     private Long userId;
