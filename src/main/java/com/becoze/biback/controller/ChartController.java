@@ -34,6 +34,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 帖子接口
@@ -57,6 +59,9 @@ public class ChartController {
 
     @Resource
     private RedisLimiterManager redisLimiterManager;
+
+    @Resource
+    private ThreadPoolExecutor threadPoolExecutor;
 
     private final static Gson GSON = new Gson();
 
@@ -204,7 +209,6 @@ public class ChartController {
          */
         StringBuilder userInput = new StringBuilder();
         userInput.append("Analysis goal: ").append(goal).append(". \n");
-
         if(StringUtils.isNotBlank(chartType)){      // Use user chart type preference if provided, or let AI decide
             userInput.append("Generate a ").append(chartType).append(" accordingly. \n");
         }else{
@@ -254,6 +258,149 @@ public class ChartController {
 
 
         return ResultUtils.success(yuAiResponse);
+    }
+
+    /**
+     * AI Analysis upload (Async)
+     *
+     * @param multipartFile
+     * @param genChartByYuAiRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/gen/async")
+    public BaseResponse<YuAiResponse> genChartByYuAiAsync(@RequestPart("file") MultipartFile multipartFile,
+                                                     GenChartByYuAiRequest genChartByYuAiRequest, HttpServletRequest request) {
+        /*
+         * gather user input
+         */
+        String name = genChartByYuAiRequest.getName();
+        String goal = genChartByYuAiRequest.getGoal();
+        String chartType = genChartByYuAiRequest.getChartType();
+
+        /*
+         * user input authentication, check input (goal, name) is valid
+         */
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "goal is Null");
+        ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "Long name");
+
+        /*
+         * file authentication
+         */
+        // Check file size
+        long size = multipartFile.getSize();
+        final long ONE_MB = 1024 * 1024 * 1L;   // define the size of 1 MB threshold
+        ThrowUtils.throwIf( size > ONE_MB, ErrorCode.PARAMS_ERROR, "Exceed file size limit 1M");
+
+        // Check file suffix
+        String originalFilename = multipartFile.getOriginalFilename();
+        String suffix = FileUtil.getSuffix(originalFilename);       // HuTool FileUtil.getSuffix() method
+        final List<String> validFileSuffix = Arrays.asList("xlsx", "xls");
+        ThrowUtils.throwIf(!validFileSuffix.contains(suffix), ErrorCode.PARAMS_ERROR, "Invalid file suffix");
+
+        // Get login user
+        User loginUser = userService.getLoginUser(request);
+
+        // Rate Limiter, limit every user use current genChartByYuAi_ method
+        redisLimiterManager.doRateLimit("genChartByYuAi_" + loginUser.getId());
+
+        /*
+         * AI model ID
+         */
+        // 鱼聪明模型ID 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
+        long biModelId = 1709156902984093697L;
+
+        /*
+         * Gather and form User Input - goal, chart type, chart name
+         */
+        StringBuilder userInput = new StringBuilder();
+        userInput.append("Analysis goal: ").append(goal).append(". \n");
+
+        if(StringUtils.isNotBlank(chartType)){      // Use user chart type preference if provided, or let AI decide
+            userInput.append("Generate a ").append(chartType).append(" accordingly. \n");
+        }else{
+            userInput.append("Generate a most suitable chart").append(". \n");
+        }
+        userInput.append("Raw data: ").append("\n");
+        String rawData = ExcelUtils.excelToCsv(multipartFile); // Excel content (raw data)
+        userInput.append(rawData).append("\n");
+
+        /*
+         * Save data into database
+         */
+        Chart chart = new Chart();
+        chart.setName(name);
+        chart.setGoal(goal);
+        chart.setChartData(rawData);
+        chart.setChartType(chartType);
+        chart.setStatus("wait");
+        chart.setUserId(loginUser.getId());
+        boolean saveResult = chartService.save(chart);
+        ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "Chart saving Error");
+
+
+        /*
+         * Submitting "call AI requests" as a task into the queue
+         */
+        CompletableFuture.runAsync(() -> {
+            // Change chart status to "running" when task is progressing
+            Chart updateChartRunning = new Chart();
+            updateChartRunning.setId(chart.getId());
+            updateChartRunning.setStatus("running");
+            boolean updateRunning = chartService.updateById(updateChartRunning);
+            if(!updateRunning){
+                handleChartStatusError(chart.getId(), "Fail to change chart status to \"running\".");
+                return;
+            }
+
+            /*
+             * Using AI to gather response
+             */
+            String aiResponse = yuAiManager.doChat(biModelId, userInput.toString());
+
+            /*
+             * Check AI Response is valid, splits AIGC content for data saving
+             */
+            String[] splits = aiResponse.split("【【【【【");
+            if(splits.length < 3){      // Check if the AI generate the wrong format
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AI Response Error");
+            }
+            String genChart = splits[1].trim();
+            String genResult = splits[2].trim();
+
+            // Change chart status to "running" when task is progressing
+            Chart updateChartResult = new Chart();
+            updateChartResult.setId(chart.getId());
+            updateChartResult.setGenChart(genChart);
+            updateChartResult.setGenResult(genResult);
+            updateChartResult.setStatus("success");
+            boolean updateResult = chartService.updateById(updateChartResult);
+            if(!updateResult){
+                handleChartStatusError(chart.getId(), "Fail to change chart status to \"success\".");
+            }
+        }, threadPoolExecutor);
+
+
+        /*
+         * Generate response for front end
+         */
+        YuAiResponse yuAiResponse = new YuAiResponse();
+        yuAiResponse.setChartId(chart.getId());
+
+
+        return ResultUtils.success(yuAiResponse);
+    }
+
+    private void handleChartStatusError(long chartId, String execMessage){
+        // Change chart status to fail
+        Chart updateChartFail = new Chart();
+        updateChartFail.setId(chartId);
+        updateChartFail.setStatus("fail");
+        updateChartFail.setExecMessage(execMessage);
+        boolean updateFail = chartService.updateById(updateChartFail);
+        if(!updateFail){
+            log.error("Fail to change chart status to \"fail\". Chart id: " + chartId + " , message: " + execMessage);
+        }
     }
 
     /**
