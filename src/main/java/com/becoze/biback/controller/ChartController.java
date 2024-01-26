@@ -333,7 +333,7 @@ public class ChartController {
         chart.setGoal(goal);
         chart.setChartData(rawData);
         chart.setChartType(chartType);
-        chart.setStatus("wait");
+        chart.setStatus("wait");        // Set chart status to wait
         chart.setUserId(loginUser.getId());
         boolean saveResult = chartService.save(chart);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "Chart saving Error");
@@ -368,12 +368,12 @@ public class ChartController {
             String genChart = splits[1].trim();
             String genResult = splits[2].trim();
 
-            // Change chart status to "running" when task is progressing
+            // Change chart status to "success" when task is completed
             Chart updateChartResult = new Chart();
             updateChartResult.setId(chart.getId());
             updateChartResult.setGenChart(genChart);
             updateChartResult.setGenResult(genResult);
-            updateChartResult.setStatus("success");
+            updateChartResult.setStatus("succeed");
             boolean updateResult = chartService.updateById(updateChartResult);
             if(!updateResult){
                 handleChartStatusError(chart.getId(), "Fail to change chart status to \"success\".");
@@ -395,7 +395,7 @@ public class ChartController {
         // Change chart status to fail
         Chart updateChartFail = new Chart();
         updateChartFail.setId(chartId);
-        updateChartFail.setStatus("fail");
+        updateChartFail.setStatus("failed");
         updateChartFail.setExecMessage(execMessage);
         boolean updateFail = chartService.updateById(updateChartFail);
         if(!updateFail){
