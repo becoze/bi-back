@@ -5,7 +5,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 
-public class RecvMuti {
+public class RecvMulti {
 
     private static final String TASK_QUEUE_NAME = "multi_queue";
 
@@ -30,13 +30,16 @@ public class RecvMuti {
                 try {
                     // doWork
                     System.out.println(" [x] Received by Consumer " + finalI + ", '" + message + "'");
-                    Thread.sleep(10000);
+                    // Acknowledge message
                     channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+                    Thread.sleep(10000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    // non-acknowledge (reject) message
                     channel.basicNack(delivery.getEnvelope().getDeliveryTag(), false, false);
                 } finally {
                     System.out.println(" [x] Done");
+                    // Acknowledge message
                     channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
                 }
             };
