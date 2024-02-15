@@ -4,9 +4,11 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
-public class EmitLogDirect {
+import java.util.Scanner;
 
-  private static final String EXCHANGE_NAME = "direct_logs";
+public class SendDirect {
+
+  private static final String EXCHANGE_NAME = "direct_exchange";
 
   public static void main(String[] argv) throws Exception {
     ConnectionFactory factory = new ConnectionFactory();
@@ -15,12 +17,20 @@ public class EmitLogDirect {
          Channel channel = connection.createChannel()) {
         channel.exchangeDeclare(EXCHANGE_NAME, "direct");
 
-        String severity = getSeverity(argv);
-        String message = getMessage(argv);
+        Scanner scanner = new Scanner(System.in);
+        while (scanner.hasNext()) {
+            String userInput = scanner.nextLine();
+            String[] strings = userInput.split(" ");
+            // invalid input, skip curren input (while loop)
+            if (strings.length < 1){
+                continue;
+            }
+            String message = strings[0];
+            String routingKey = strings[1];
 
-        channel.basicPublish(EXCHANGE_NAME, severity, null, message.getBytes("UTF-8"));
-        System.out.println(" [x] Sent '" + severity + "':'" + message + "'");
+            channel.basicPublish(EXCHANGE_NAME, routingKey, null, message.getBytes("UTF-8"));
+            System.out.println(" [x] Sent '" + message + "' with routing: " + routingKey);
+        }
     }
   }
-  //..
 }
