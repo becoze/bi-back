@@ -20,7 +20,7 @@ public class SendDirect {
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNext()) {
             String userInput = scanner.nextLine();
-            String[] strings = userInput.split(" ");
+            String[] strings = userInput.split(">");
             // invalid input, skip curren input (while loop)
             if (strings.length < 1){
                 continue;
