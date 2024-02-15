@@ -1,10 +1,13 @@
 package com.becoze.biback.mq;
 
-import com.rabbitmq.client.*;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DeliverCallback;
 
-public class ReceiveLogsDirect {
+public class RecvDirect {
 
-  private static final String EXCHANGE_NAME = "direct_logs";
+  private static final String EXCHANGE_NAME = "direct_exchange";
 
   public static void main(String[] argv) throws Exception {
     ConnectionFactory factory = new ConnectionFactory();
@@ -13,23 +16,34 @@ public class ReceiveLogsDirect {
     Channel channel = connection.createChannel();
 
     channel.exchangeDeclare(EXCHANGE_NAME, "direct");
-    String queueName = channel.queueDeclare().getQueue();
 
-    if (argv.length < 1) {
-        System.err.println("Usage: ReceiveLogsDirect [info] [warning] [error]");
-        System.exit(1);
-    }
+    // Message queue 1
+    String queue1 = "direct_e1";
+    channel.queueDeclare(queue1, true, false, false, null);
+    channel.queueBind(queue1, EXCHANGE_NAME, "e1");
 
-    for (String severity : argv) {
-        channel.queueBind(queueName, EXCHANGE_NAME, severity);
-    }
+    // Message queue 2
+    String queue2 = "direct_e2";
+    channel.queueDeclare(queue2, true, false, false, null);
+    channel.queueBind(queue2, EXCHANGE_NAME, "e2");
+
     System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
-    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+
+    // employee1 dowork
+    DeliverCallback deliverCallback1 = (consumerTag, delivery) -> {
         String message = new String(delivery.getBody(), "UTF-8");
-        System.out.println(" [x] Received '" +
+        System.out.println(" [E1] Received '" +
             delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
     };
-    channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });
+
+    // employee2 dowork
+    DeliverCallback deliverCallback2 = (consumerTag, delivery) -> {
+      String message = new String(delivery.getBody(), "UTF-8");
+      System.out.println(" [E2] Received '" +
+              delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
+    };
+    channel.basicConsume(queue1, true, deliverCallback1, consumerTag -> { });
+    channel.basicConsume(queue2, true, deliverCallback2, consumerTag -> { });
   }
 }
