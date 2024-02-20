@@ -5,9 +5,9 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 
-public class ReceiveLogsTopic {
+public class RecvTopic {
 
-  private static final String EXCHANGE_NAME = "topic_logs";
+  private static final String EXCHANGE_NAME = "topic_exchange";
 
   public static void main(String[] argv) throws Exception {
     ConnectionFactory factory = new ConnectionFactory();
@@ -16,24 +16,47 @@ public class ReceiveLogsTopic {
     Channel channel = connection.createChannel();
 
     channel.exchangeDeclare(EXCHANGE_NAME, "topic");
-    String queueName = channel.queueDeclare().getQueue();
 
-    if (argv.length < 1) {
-        System.err.println("Usage: ReceiveLogsTopic [binding_key]...");
-        System.exit(1);
-    }
+      // Message queue 1
+      String queue1 = "frontend_queue";
+      channel.queueDeclare(queue1, true, false, false, null);
+      channel.queueBind(queue1, EXCHANGE_NAME, "#.frontend.#");
 
-    for (String bindingKey : argv) {
-        channel.queueBind(queueName, EXCHANGE_NAME, bindingKey);
-    }
+      // Message queue 2
+      String queue2 = "backend_queue";
+      channel.queueDeclare(queue2, true, false, false, null);
+      channel.queueBind(queue2, EXCHANGE_NAME, "#.backend.#");
 
-    System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+      // Message queue 3
+      String queue3 = "market_queue";
+      channel.queueDeclare(queue3, true, false, false, null);
+      channel.queueBind(queue3, EXCHANGE_NAME, "#.market.#");
 
-    DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-        String message = new String(delivery.getBody(), "UTF-8");
-        System.out.println(" [x] Received '" +
-            delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
-    };
-    channel.basicConsume(queueName, true, deliverCallback, consumerTag -> { });
+      System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+
+
+      // front end dowork
+      DeliverCallback deliverCallback_Nick = (consumerTag, delivery) -> {
+          String message = new String(delivery.getBody(), "UTF-8");
+          System.out.println(" [Nick] Received '" +
+                  delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
+      };
+
+      // back end dowork
+      DeliverCallback deliverCallback_Alice = (consumerTag, delivery) -> {
+          String message = new String(delivery.getBody(), "UTF-8");
+          System.out.println(" [Alice] Received '" +
+                  delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
+      };
+      // market dowork
+      DeliverCallback deliverCallback_Tom = (consumerTag, delivery) -> {
+          String message = new String(delivery.getBody(), "UTF-8");
+          System.out.println(" [Tom] Received '" +
+                  delivery.getEnvelope().getRoutingKey() + "':'" + message + "'");
+      };
+
+      channel.basicConsume(queue1, true, deliverCallback_Nick, consumerTag -> { });
+      channel.basicConsume(queue2, true, deliverCallback_Alice, consumerTag -> { });
+      channel.basicConsume(queue3, true, deliverCallback_Tom, consumerTag -> { });
   }
 }
