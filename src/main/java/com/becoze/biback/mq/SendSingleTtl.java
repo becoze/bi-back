@@ -1,5 +1,6 @@
 package com.becoze.biback.mq;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -20,7 +21,14 @@ public class SendSingleTtl {
              Channel channel = connection.createChannel()) {
 
             String message = "Hello World!";
-            channel.basicPublish("", QUEUE_NAME, null, message.getBytes(StandardCharsets.UTF_8));
+
+//            byte[] messageBodyBytes = "Hello, world!".getBytes();
+            AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
+                    .expiration("10000")
+                    .build();
+            channel.basicPublish("", QUEUE_NAME, properties, message.getBytes(StandardCharsets.UTF_8) );
+
+//            channel.basicPublish("", QUEUE_NAME, null, message.getBytes(StandardCharsets.UTF_8));
             System.out.println(" [x] Sent '" + message + "'");
         }
     }
