@@ -15,9 +15,6 @@ import javax.annotation.Resource;
 @Slf4j
 public class MyMessageConsumer {
 
-    @Resource
-    private RabbitTemplate rabbitTemplate;
-
     @SneakyThrows
     @RabbitListener(queues = {}, ackMode = "MANUAL")
     public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
