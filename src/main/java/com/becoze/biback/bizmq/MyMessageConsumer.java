@@ -15,8 +15,9 @@ import javax.annotation.Resource;
 @Slf4j
 public class MyMessageConsumer {
 
+    // queues = {"..."} the name of queue listening to; ackMode = "..." the ack mode: "MANUAL" or "AUTO"
     @SneakyThrows
-    @RabbitListener(queues = {}, ackMode = "MANUAL")
+    @RabbitListener(queues = {"code_queue"}, ackMode = "MANUAL")
     public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
         log.info("receiveMessage message = {}", message);
         channel.basicAck(deliveryTag, false);
