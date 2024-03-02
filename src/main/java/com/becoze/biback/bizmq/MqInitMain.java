@@ -4,17 +4,28 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
-public class Main {
-    ConnectionFactory factory = new ConnectionFactory();
-    factory.setHost("localhost");
-    Connection connection = factory.newConnection();
-    Channel channel = connection.createChannel();
+/**
+ * Create Message queue(s) and Exchange(s) for testing
+ */
+public class MqInitMain {
+    public static void main(String[] args) {
 
-    channel.exchangeDeclare(EXCHANGE_NAME, "direct");
+        try {
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.setHost("localhost");
+            Connection connection = factory.newConnection();
+            Channel channel = connection.createChannel();
 
-    // Message queue 1
-    String queue1 = "direct_e1";
-    channel.queueDeclare(queue1, true, false, false, null);
-    channel.queueBind(queue1, EXCHANGE_NAME, "e1");
+            String EXCHANGE_NAME = "code_exchange";
+            channel.exchangeDeclare(EXCHANGE_NAME, "direct");
 
+            // Message queue 1
+            String queueName = "code_queue";
+            channel.queueDeclare(queueName, true, false, false, null);
+            channel.queueBind(queueName, EXCHANGE_NAME, "my_routingKey");
+
+        } catch (Exception e) {
+
+        }
+    }
 }
