@@ -16,10 +16,14 @@ public class MyMessageConsumer {
 
     // queues = {"..."} the name of queue listening to; ackMode = "..." the ack mode: "MANUAL" or "AUTO"
     // same concept as `channelName.basicConsume(...)`, @RabbitListener header automatic do it for us.
-    @SneakyThrows
+
     @RabbitListener(queues = {"code_queue"}, ackMode = "MANUAL")
     public void receiveMessage(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
         log.info("receiveMessage message = {}", message);
-        channel.basicAck(deliveryTag, false);
+        try {
+            channel.basicAck(deliveryTag, false);
+        }catch (Exception e){
+
+        }
     }
 }
