@@ -5,7 +5,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 /**
- * Create Message queue(s) and Exchange(s) for testing
+ * Create Message queue(s) and Exchange(s) for testing. MUSH run this once before any MQ operation
  */
 public class MqInitMain {
     public static void main(String[] args) {
