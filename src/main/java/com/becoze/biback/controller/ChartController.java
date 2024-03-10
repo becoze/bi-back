@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.becoze.biback.annotation.AuthCheck;
+import com.becoze.biback.bizmq.BiMessageProducer;
 import com.becoze.biback.common.BaseResponse;
 import com.becoze.biback.common.DeleteRequest;
 import com.becoze.biback.common.ErrorCode;
@@ -20,7 +21,6 @@ import com.becoze.biback.service.ChartService;
 import com.becoze.biback.service.UserService;
 import com.becoze.biback.utils.ExcelUtils;
 import com.becoze.biback.utils.SqlUtils;
-import com.google.gson.Gson;
 import com.becoze.biback.constant.CommonConstant;
 import com.becoze.biback.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +63,8 @@ public class ChartController {
     @Resource
     private ThreadPoolExecutor threadPoolExecutor;
 
-    private final static Gson GSON = new Gson();
+    @Resource
+    private BiMessageProducer biMessageProducer;
 
     // region 增删改查
 
@@ -202,7 +203,7 @@ public class ChartController {
          * AI model ID
          */
         // 鱼聪明模型ID 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
-        long biModelId = 1709156902984093697L;
+        long biModelId = CommonConstant.BI_MODEL_ID;
 
         /*
          * Gather and form User Input - goal, chart type, chart name
@@ -308,7 +309,7 @@ public class ChartController {
          * AI model ID
          */
         // 鱼聪明模型ID 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
-        long biModelId = 1709156902984093697L;
+        long biModelId = CommonConstant.BI_MODEL_ID;
 
         /*
          * Gather and form User Input - goal, chart type, chart name
@@ -390,6 +391,104 @@ public class ChartController {
 
         return ResultUtils.success(yuAiResponse);
     }
+
+    /**
+     * AI Analysis upload (Async + Message Queue)
+     *
+     * @param multipartFile
+     * @param genChartByYuAiRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/gen/async/mq")
+    public BaseResponse<YuAiResponse> genChartByYuAiAsyncMq(@RequestPart("file") MultipartFile multipartFile,
+                                                          GenChartByYuAiRequest genChartByYuAiRequest, HttpServletRequest request) {
+        /*
+         * gather user input
+         */
+        String name = genChartByYuAiRequest.getName();
+        String goal = genChartByYuAiRequest.getGoal();
+        String chartType = genChartByYuAiRequest.getChartType();
+
+        /*
+         * user input authentication, check input (goal, name) is valid
+         */
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "goal is Null");
+        ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "Long name");
+
+        /*
+         * file authentication
+         */
+        // Check file size
+        long size = multipartFile.getSize();
+        final long ONE_MB = 1024 * 1024 * 1L;   // define the size of 1 MB threshold
+        ThrowUtils.throwIf( size > ONE_MB, ErrorCode.PARAMS_ERROR, "Exceed file size limit 1M");
+
+        // Check file suffix
+        String originalFilename = multipartFile.getOriginalFilename();
+        String suffix = FileUtil.getSuffix(originalFilename);       // HuTool FileUtil.getSuffix() method
+        final List<String> validFileSuffix = Arrays.asList("xlsx", "xls");
+        ThrowUtils.throwIf(!validFileSuffix.contains(suffix), ErrorCode.PARAMS_ERROR, "Invalid file suffix");
+
+        // Get login user
+        User loginUser = userService.getLoginUser(request);
+
+        // Rate Limiter, limit every user use current genChartByYuAi_ method
+        redisLimiterManager.doRateLimit("genChartByYuAi_" + loginUser.getId());
+
+        /*
+         * AI model ID
+         */
+        long biModelId = CommonConstant.BI_MODEL_ID;
+
+        /*
+        * Building user analysis requirement to send to AI
+         */
+        StringBuilder userInput = new StringBuilder();
+
+        userInput.append("Analysis goal: ").append(goal).append(". \n");
+
+        if(StringUtils.isNotBlank(chartType)){      // Use user chart type preference if provided, or let AI decide
+            userInput.append("Generate a ").append(chartType).append(" accordingly. \n");
+        } else {
+            userInput.append("Generate a most suitable chart").append(". \n");
+        }
+
+        // turn user uploaded excel file to scv file
+        userInput.append("Raw data: ").append("\n");
+        String csvData = ExcelUtils.excelToCsv(multipartFile);
+        userInput.append(csvData).append("\n");
+
+        /*
+         * Save data into database
+         */
+        Chart chart = new Chart();
+        chart.setName(name);
+        chart.setGoal(goal);
+        chart.setChartData(csvData);
+        chart.setChartType(chartType);
+        chart.setStatus("wait");        // Set chart status to wait
+        chart.setUserId(loginUser.getId());
+        boolean saveResult = chartService.save(chart);
+        ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "Chart saving Error");
+
+        /*
+         * Send ID to message queue
+         */
+        Long newChartId = chart.getId();
+        biMessageProducer.sendMessage(String.valueOf(newChartId));
+
+
+        /*
+         * Generate response for front end
+         */
+        YuAiResponse yuAiResponse = new YuAiResponse();
+        yuAiResponse.setChartId(newChartId);
+
+
+        return ResultUtils.success(yuAiResponse);
+    }
+
 
     private void handleChartStatusError(long chartId, String execMessage){
         // Change chart status to fail
