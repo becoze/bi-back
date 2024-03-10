@@ -17,5 +17,11 @@ public interface CommonConstant {
      * 降序
      */
     String SORT_ORDER_DESC = " descend";
+
+    /**
+     * yuBI ai ID
+     */
+    // 鱼聪明模型ID, 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
+    long BI_MODEL_ID = 1709156902984093697L;
     
 }
