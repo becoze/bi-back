@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 @Component
-public class BiProducer {
+public class BiMessageProducer {
 
     @Resource
     private RabbitTemplate rabbitTemplate;
