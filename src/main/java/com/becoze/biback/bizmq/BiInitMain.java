@@ -1,5 +1,6 @@
 package com.becoze.biback.bizmq;
 
+import com.becoze.biback.constant.BiMqConstant;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -7,7 +8,7 @@ import com.rabbitmq.client.ConnectionFactory;
 /**
  * Create Message queue(s) and Exchange(s) for testing. MUSH run this once before any MQ operation
  */
-public class MqInitMain {
+public class BiInitMain {
     public static void main(String[] args) {
 
         try {
@@ -16,13 +17,13 @@ public class MqInitMain {
             Connection connection = factory.newConnection();
             Channel channel = connection.createChannel();
 
-            String EXCHANGE_NAME = "code_exchange";
+            String EXCHANGE_NAME = BiMqConstant.BI_EXCHANGE_NAME;
             channel.exchangeDeclare(EXCHANGE_NAME, "direct");
 
             // Message queue 1
-            String queueName = "code_queue";
+            String queueName = BiMqConstant.BI_QUEUE_NAME;
             channel.queueDeclare(queueName, true, false, false, null);
-            channel.queueBind(queueName, EXCHANGE_NAME, "my_routingKey");
+            channel.queueBind(queueName, EXCHANGE_NAME, BiMqConstant.BI_ROUTING_KEY);
 
         } catch (Exception e) {
 
