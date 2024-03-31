@@ -6,7 +6,6 @@ import com.becoze.biback.common.BaseResponse;
 import com.becoze.biback.common.DeleteRequest;
 import com.becoze.biback.common.ErrorCode;
 import com.becoze.biback.common.ResultUtils;
-import com.becoze.biback.config.WxOpenConfig;
 import com.becoze.biback.constant.UserConstant;
 import com.becoze.biback.exception.BusinessException;
 import com.becoze.biback.exception.ThrowUtils;
@@ -45,9 +44,6 @@ public class UserController {
 
     @Resource
     private UserService userService;
-
-    @Resource
-    private WxOpenConfig wxOpenConfig;
 
     // region 登录相关
 
