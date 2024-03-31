@@ -3,7 +3,6 @@ package com.becoze.biback.esdao;
 import com.becoze.biback.model.dto.post.PostEsDTO;
 import com.becoze.biback.model.dto.post.PostQueryRequest;
 import com.becoze.biback.model.entity.Post;
-import com.becoze.biback.service.PostService;
 
 import java.util.Arrays;
 import java.util.Date;
