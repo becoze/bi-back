@@ -53,10 +53,10 @@ Unlike traditional BI tools, users only need to input the raw dataset and analys
 ## Quick Start
 ### Environment (recommended)
 - Java Version：1.8.0_371
-- MySQL：8.0.20
-- Redis：5.0.14
-- Erlang：24.2
-- RabbitMQ：3.9.11
+- MySQL: 8.0.20
+- Redis: 5.0.14
+- Erlang: 24.2
+- RabbitMQ: 3.9.11
 
 ### Front-end
 1. Install `node_modules`:
