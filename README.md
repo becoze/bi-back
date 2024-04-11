@@ -47,7 +47,7 @@ Unlike traditional BI tools, users only need to input the raw dataset and analys
 ### Front-end
 1. **React 18**
 2. **Ant Design Pro** v5 scaffold & library
-3. **OpenAPI**: Automatically generate api code
+3. **OpenAPI**: Automatically generate api code based on Swagger API document  
 4. **EChart**: chart generation
 
 ## Quick Start
