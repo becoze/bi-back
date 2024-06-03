@@ -1,32 +1,30 @@
 package com.becoze.biback.constant;
 
 /**
- * 用户常量
+ * User's constant
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 public interface UserConstant {
 
     /**
-     * 用户登录态键
+     * User login state key
      */
     String USER_LOGIN_STATE = "user_login";
 
-    //  region 权限
+    //  region permissions
 
     /**
-     * 默认角色
+     * Default role
      */
     String DEFAULT_ROLE = "user";
 
     /**
-     * 管理员角色
+     * Admin
      */
     String ADMIN_ROLE = "admin";
 
     /**
-     * 被封号
+     * banned
      */
     String BAN_ROLE = "ban";
 
