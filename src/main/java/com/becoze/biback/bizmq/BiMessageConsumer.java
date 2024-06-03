@@ -99,9 +99,9 @@ public class BiMessageConsumer {
     }
 
     /**
-     * build user input using generated chart id with database
-     * @param chart generated chart id
-     * @return
+     * Build user input using generated chart id with database
+     * @param chart chart id
+     * @return User input in String
      */
     private String buildUserInput(Chart chart) {
         /*
