@@ -4,31 +4,29 @@ import com.becoze.biback.constant.CommonConstant;
 import lombok.Data;
 
 /**
- * 分页请求
+ * Pagination request / config
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 @Data
 public class PageRequest {
 
     /**
-     * 当前页号
+     * Current page number
      */
     private long current = 1;
 
     /**
-     * 页面大小
+     * Number of items per page
      */
     private long pageSize = 10;
 
     /**
-     * 排序字段
+     * Sorting field
      */
     private String sortField;
 
     /**
-     * 排序顺序（默认升序）
+     * Sorting order (default ascending)
      */
     private String sortOrder = CommonConstant.SORT_ORDER_ASC;
 }
