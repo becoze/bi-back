@@ -1,30 +1,28 @@
 package com.becoze.biback.common;
 
 /**
- * 自定义错误码
+ * Custom error codes:
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 public enum ErrorCode {
 
-    SUCCESS(0, "ok"),
-    PARAMS_ERROR(40000, "请求参数错误"),
-    NOT_LOGIN_ERROR(40100, "未登录"),
-    NO_AUTH_ERROR(40101, "无权限"),
-    NOT_FOUND_ERROR(40400, "请求数据不存在"),
+    SUCCESS(0, "Success"),
+    PARAMS_ERROR(40000, "Invalid request parameters"),
+    NOT_LOGIN_ERROR(40100, "Not logged in"),
+    NO_AUTH_ERROR(40101, "No permission"),
+    NOT_FOUND_ERROR(40400, "Requested data not found"),
     TOO_MANY_REQUEST(42900, "Too many requests, please try again later"),
-    FORBIDDEN_ERROR(40300, "禁止访问"),
-    SYSTEM_ERROR(50000, "系统内部异常"),
-    OPERATION_ERROR(50001, "操作失败");
+    FORBIDDEN_ERROR(40300, "Access forbidden"),
+    SYSTEM_ERROR(50000, "System error"),
+    OPERATION_ERROR(50001, "Operation failed");
 
     /**
-     * 状态码
+     * Error Code / Status Code
      */
     private final int code;
 
     /**
-     * 信息
+     * Message
      */
     private final String message;
 
