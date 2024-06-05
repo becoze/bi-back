@@ -3,18 +3,16 @@ package com.becoze.biback.exception;
 import com.becoze.biback.common.ErrorCode;
 
 /**
- * 抛异常工具类
+ * Utils of Exception Throw
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 public class ThrowUtils {
 
     /**
-     * 条件成立则抛异常
+     * Exception Throw
      *
-     * @param condition
-     * @param runtimeException
+     * @param condition boolean
+     * @param runtimeException RuntimeException
      */
     public static void throwIf(boolean condition, RuntimeException runtimeException) {
         if (condition) {
@@ -23,21 +21,21 @@ public class ThrowUtils {
     }
 
     /**
-     * 条件成立则抛异常
+     * Exception Throw
      *
-     * @param condition
-     * @param errorCode
+     * @param condition boolean
+     * @param errorCode ErrorCode - custom error codes
      */
     public static void throwIf(boolean condition, ErrorCode errorCode) {
         throwIf(condition, new BusinessException(errorCode));
     }
 
     /**
-     * 条件成立则抛异常
+     * Exception Throw
      *
-     * @param condition
-     * @param errorCode
-     * @param message
+     * @param condition boolean
+     * @param errorCode ErrorCode - custom error codes
+     * @param message String
      */
     public static void throwIf(boolean condition, ErrorCode errorCode, String message) {
         throwIf(condition, new BusinessException(errorCode, message));
