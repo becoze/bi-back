@@ -38,10 +38,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * 帖子接口
+ * Chart management APIs
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 @RestController
 @RequestMapping("/chart")
@@ -66,14 +64,14 @@ public class ChartController {
     @Resource
     private BiMessageProducer biMessageProducer;
 
-    // region 增删改查
+    // region CRUD
 
     /**
-     * Creat
+     * Creat a chart
      *
-     * @param chartAddRequest
-     * @param request
-     * @return
+     * @param chartAddRequest ChartAddRequest
+     * @param request HttpServletRequest
+     * @return BaseResponse - success message, with a new chart id
      */
     @PostMapping("/add")
     public BaseResponse<Long> addChart(@RequestBody ChartAddRequest chartAddRequest, HttpServletRequest request) {
@@ -91,11 +89,11 @@ public class ChartController {
     }
 
     /**
-     * Delete
+     * Delete a chart (admin only)
      *
-     * @param deleteRequest
-     * @param request
-     * @return
+     * @param deleteRequest DeleteRequest
+     * @param request HttpServletRequest
+     * @return BaseResponse - success message, with an id of deleted chart
      */
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteChart(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
@@ -104,10 +102,10 @@ public class ChartController {
         }
         User user = userService.getLoginUser(request);
         long id = deleteRequest.getId();
-        // 判断是否存在
+        // Determined is the target chart exist
         Chart oldChart = chartService.getById(id);
         ThrowUtils.throwIf(oldChart == null, ErrorCode.NOT_FOUND_ERROR);
-        // 仅本人或管理员可删除
+        // Check is admin, delete only open for admin role
         if (!oldChart.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
@@ -116,10 +114,10 @@ public class ChartController {
     }
 
     /**
-     * 更新（仅管理员）
+     * Update chart data (admin only)
      *
-     * @param chartUpdateRequest
-     * @return
+     * @param chartUpdateRequest ChartUpdateRequest
+     * @return BaseResponse - success message, with an id of updated chart
      */
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -130,7 +128,7 @@ public class ChartController {
         Chart chart = new Chart();
         BeanUtils.copyProperties(chartUpdateRequest, chart);
         long id = chartUpdateRequest.getId();
-        // 判断是否存在
+        // Determine if it exists
         Chart oldChart = chartService.getById(id);
         ThrowUtils.throwIf(oldChart == null, ErrorCode.NOT_FOUND_ERROR);
         boolean result = chartService.updateById(chart);
@@ -138,10 +136,10 @@ public class ChartController {
     }
 
     /**
-     * 根据 id 获取
+     * Read (get) chart by id
      *
-     * @param id
-     * @return
+     * @param id long, chart id
+     * @return BaseResponse - success message, with a chart id
      */
     @GetMapping("/get/")
     public BaseResponse<Chart> getChartById(long id, HttpServletRequest request) {
@@ -158,10 +156,10 @@ public class ChartController {
     /**
      * AI Analysis upload
      *
-     * @param multipartFile
-     * @param genChartByYuAiRequest
-     * @param request
-     * @return
+     * @param multipartFile MultipartFile
+     * @param genChartByYuAiRequest GenChartByYuAiRequest
+     * @param request HttpServletRequest
+     * @return BaseResponse - success message with, YuAiResponse - chart id, user input, chart output (content)
      */
     @PostMapping("/gen")
     public BaseResponse<YuAiResponse> genChartByYuAi(@RequestPart("file") MultipartFile multipartFile,
@@ -202,7 +200,6 @@ public class ChartController {
         /*
          * AI model ID
          */
-        // 鱼聪明模型ID 我的BI：1709156902984093697  歌曲推荐：1651468516836098050
         long biModelId = CommonConstant.BI_MODEL_ID;
 
         /*
@@ -264,10 +261,10 @@ public class ChartController {
     /**
      * AI Analysis upload (Async)
      *
-     * @param multipartFile
-     * @param genChartByYuAiRequest
-     * @param request
-     * @return
+     * @param multipartFile MultipartFile
+     * @param genChartByYuAiRequest GenChartByYuAiRequest
+     * @param request HttpServletRequest
+     * @return BaseResponse - success message with YuAiResponse - chart id, user input, chart output (content)
      */
     @PostMapping("/gen/async")
     public BaseResponse<YuAiResponse> genChartByYuAiAsync(@RequestPart("file") MultipartFile multipartFile,
@@ -395,10 +392,10 @@ public class ChartController {
     /**
      * AI Analysis upload (Async + Message Queue)
      *
-     * @param multipartFile
-     * @param genChartByYuAiRequest
-     * @param request
-     * @return
+     * @param multipartFile MultipartFile
+     * @param genChartByYuAiRequest GenChartByYuAiRequest
+     * @param request HttpServletRequest
+     * @return BaseResponse - success message with YuAiResponse - chart id, user input, chart output (content)
      */
     @PostMapping("/gen/async/mq")
     public BaseResponse<YuAiResponse> genChartByYuAiAsyncMq(@RequestPart("file") MultipartFile multipartFile,
@@ -503,10 +500,10 @@ public class ChartController {
     }
 
     /**
-     * 分页获取列表（封装类）
+     * Paginated List Retrieval (Encapsulated Class)
      *
-     * @param chartQueryRequest
-     * @param request
+     * @param chartQueryRequest ChartQueryRequest
+     * @param request HttpServletRequest
      * @return
      */
     @PostMapping("/list/page/")
@@ -514,7 +511,7 @@ public class ChartController {
             HttpServletRequest request) {
         long current = chartQueryRequest.getCurrent();
         long size = chartQueryRequest.getPageSize();
-        // 限制爬虫
+        // Restricting Crawlers
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         Page<Chart> chartPage = chartService.page(new Page<>(current, size),
                 getQueryWrapper(chartQueryRequest));
@@ -522,7 +519,7 @@ public class ChartController {
     }
 
     /**
-     * 分页获取当前用户创建的资源列表
+     * Paginated Retrieval of Resource List Created by the Current User
      *
      * @param chartQueryRequest
      * @param request
@@ -538,7 +535,7 @@ public class ChartController {
         chartQueryRequest.setUserId(loginUser.getId());
         long current = chartQueryRequest.getCurrent();
         long size = chartQueryRequest.getPageSize();
-        // 限制爬虫
+        // Restricting Crawlers
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         Page<Chart> chartPage = chartService.page(new Page<>(current, size),
                 getQueryWrapper(chartQueryRequest));
@@ -548,7 +545,7 @@ public class ChartController {
     // endregion
 
     /**
-     * User Edit
+     * User update / edit chart data
      *
      * @param chartEditRequest
      * @param request
@@ -563,10 +560,10 @@ public class ChartController {
         BeanUtils.copyProperties(chartEditRequest, chart);
         User loginUser = userService.getLoginUser(request);
         long id = chartEditRequest.getId();
-        // 判断是否存在
+        // Determine if it exists
         Chart oldChart = chartService.getById(id);
         ThrowUtils.throwIf(oldChart == null, ErrorCode.NOT_FOUND_ERROR);
-        // 仅本人或管理员可编辑
+        // Verifying User Identity
         if (!oldChart.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
@@ -575,7 +572,7 @@ public class ChartController {
     }
 
     /**
-     * 获取查询包装类
+     * Gather query wrapper
      *
      * @param chartQueryRequest
      * @return
@@ -585,7 +582,7 @@ public class ChartController {
         if (chartQueryRequest == null) {
             return queryWrapper;
         }
-        // 查询参数
+        // Query Parameters
         Long id = chartQueryRequest.getId();
         String goal = chartQueryRequest.getGoal();
         String name = chartQueryRequest.getName();
@@ -594,7 +591,7 @@ public class ChartController {
         String sortField = chartQueryRequest.getSortField();
         String sortOrder = chartQueryRequest.getSortOrder();
 
-        // 拼接查询条件
+        // Concatenating Queries
         queryWrapper.eq(id != null && id > 0, "id", id);
         queryWrapper.eq(StringUtils.isNotBlank(goal), "goal", goal);
         queryWrapper.like(StringUtils.isNotBlank(name), "name", name);

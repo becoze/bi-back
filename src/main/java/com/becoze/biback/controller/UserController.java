@@ -32,10 +32,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 用户接口
+ * User management APIs
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
 @RestController
 @RequestMapping("/user")
@@ -45,13 +43,13 @@ public class UserController {
     @Resource
     private UserService userService;
 
-    // region 登录相关
+    // region Login
 
     /**
-     * 用户注册
+     * User Register
      *
-     * @param userRegisterRequest
-     * @return
+     * @param userRegisterRequest UserRegisterRequest
+     * @return Success message with user account, password and confirm password
      */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
@@ -69,11 +67,11 @@ public class UserController {
     }
 
     /**
-     * 用户登录
+     * User Login
      *
-     * @param userLoginRequest
-     * @param request
-     * @return
+     * @param userLoginRequest UserLoginRequest
+     * @param request HttpServletRequest
+     * @return Success message with user account, password and confirm password
      */
     @PostMapping("/login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
@@ -91,10 +89,10 @@ public class UserController {
 
 
     /**
-     * 用户注销
+     * User Logout
      *
-     * @param request
-     * @return
+     * @param request HttpServletRequest
+     * @return Success message
      */
     @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
@@ -106,10 +104,10 @@ public class UserController {
     }
 
     /**
-     * 获取当前登录用户
+     * Get current logged in user
      *
-     * @param request
-     * @return
+     * @param request HttpServletRequest
+     * @return Success message with user information
      */
     @GetMapping("/get/login")
     public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
@@ -119,14 +117,14 @@ public class UserController {
 
     // endregion
 
-    // region 增删改查
+    // region CRUD
 
     /**
-     * 创建用户
+     * Creat User
      *
-     * @param userAddRequest
-     * @param request
-     * @return
+     * @param userAddRequest UserAddRequest
+     * @param request HttpServletRequest
+     * @return Success message with new user id
      */
     @PostMapping("/add")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -142,11 +140,11 @@ public class UserController {
     }
 
     /**
-     * 删除用户
+     * Delete user
      *
-     * @param deleteRequest
-     * @param request
-     * @return
+     * @param deleteRequest DeleteRequest
+     * @param request HttpServletRequest
+     * @return Success message with deleted user id
      */
     @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -159,11 +157,11 @@ public class UserController {
     }
 
     /**
-     * 更新用户
+     * Update user status
      *
-     * @param userUpdateRequest
-     * @param request
-     * @return
+     * @param userUpdateRequest UserUpdateRequest
+     * @param request HttpServletRequest
+     * @return Success message
      */
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -180,11 +178,11 @@ public class UserController {
     }
 
     /**
-     * 根据 id 获取用户（仅管理员）
+     * Read / get user by id (admin only)
      *
-     * @param id
-     * @param request
-     * @return
+     * @param id long - user id
+     * @param request HttpServletRequest
+     * @return Success message with user id
      */
     @GetMapping("/get")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -198,11 +196,11 @@ public class UserController {
     }
 
     /**
-     * 根据 id 获取包装类
+     * Read / get user class by id
      *
-     * @param id
-     * @param request
-     * @return
+     * @param id long - user id
+     * @param request HttpServletRequest
+     * @return Success message with user id
      */
     @GetMapping("/get/vo")
     public BaseResponse<UserVO> getUserVOById(long id, HttpServletRequest request) {
@@ -212,11 +210,11 @@ public class UserController {
     }
 
     /**
-     * 分页获取用户列表（仅管理员）
+     * Retrieval paginated user list (admin only)
      *
-     * @param userQueryRequest
-     * @param request
-     * @return
+     * @param userQueryRequest UserQueryRequest
+     * @param request HttpServletRequest
+     * @return Success message with page size and page number
      */
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -230,11 +228,11 @@ public class UserController {
     }
 
     /**
-     * 分页获取用户封装列表
+     * Retrieval encapsulated paginated user list
      *
-     * @param userQueryRequest
-     * @param request
-     * @return
+     * @param userQueryRequest UserQueryRequest
+     * @param request HttpServletRequest
+     * @return Success message with page size, page number total pages
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest,
@@ -244,7 +242,7 @@ public class UserController {
         }
         long current = userQueryRequest.getCurrent();
         long size = userQueryRequest.getPageSize();
-        // 限制爬虫
+        // Restricting Crawlers
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
         Page<User> userPage = userService.page(new Page<>(current, size),
                 userService.getQueryWrapper(userQueryRequest));
@@ -257,11 +255,11 @@ public class UserController {
     // endregion
 
     /**
-     * 更新个人信息
+     * Update self (user) status / information
      *
-     * @param userUpdateMyRequest
-     * @param request
-     * @return
+     * @param userUpdateMyRequest UserUpdateMyRequest
+     * @param request HttpServletRequest
+     * @return Success message
      */
     @PostMapping("/update/my")
     public BaseResponse<Boolean> updateMyUser(@RequestBody UserUpdateMyRequest userUpdateMyRequest,

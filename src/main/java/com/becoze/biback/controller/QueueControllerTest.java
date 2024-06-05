@@ -27,8 +27,8 @@ public class QueueControllerTest {
 
 
     /**
-     * submit a task to the thread pool for texting
-     * @param task
+     * Submit a task to the thread pool for texting
+     * @param task String
      */
     @GetMapping("/add")
     public void add(String task){
@@ -44,6 +44,10 @@ public class QueueControllerTest {
         }, threadPoolExecutor);
     }
 
+    /**
+     * Get thread pool status
+     * @return JsonString - thread pool status
+     */
     @GetMapping("/get")
     public String get(){
         Map<String, Object> map = new HashMap<>();
