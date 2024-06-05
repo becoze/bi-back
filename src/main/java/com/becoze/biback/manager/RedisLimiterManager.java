@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 
 /**
- * 专门提供RedisLimiter限流基础服务的，不受限于项目和业务，提供通用的Redis功能
+ * General RedisLimiter, rate limiting only - not rely on business logic
  */
 @Service
 public class RedisLimiterManager {
@@ -21,15 +21,15 @@ public class RedisLimiterManager {
     private RedissonClient redissonClient;
 
     /**
-     * 限流操作
-     * @param key 区分不同的限流器，比如不同用户的id
+     * Rate limiting
+     * @param key String, Differentiate between various rate limiters, such as by different user IDs.
      */
     public void doRateLimit(String key) {
-        //创建一个名称为User_limiter的限流器，每秒最多访问2次
+        // Create a rate limiter named User_limiter that allows a maximum of 2 accesses per second.
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(key);
         rateLimiter.trySetRate(RateType.OVERALL, 2, 1, RateIntervalUnit.SECONDS);
 
-        // 每当一个操作来了后，请求一个令牌
+        // Request a token each time an operation comes in.
         boolean canOp = rateLimiter.tryAcquire(1);
 
         if(!canOp){
